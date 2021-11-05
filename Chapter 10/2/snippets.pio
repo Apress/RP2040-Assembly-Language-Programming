@@ -1,0 +1,63 @@
+;
+; PIO Code Snippets from Chapter 10
+;
+
+.program snippets
+label:
+ 	JMP	label		; unconditional branch
+	JMP	!X label	;  jump if X is non zero
+	JMP	X-- label	; jump if X is non zero while decrementing X
+	JMP	!Y label	; jump if Y is non zero
+	JMP	Y-- label	; jump if Y is non zero while decrementing Y
+	JMP	X!=Y label	; jump if X is not equal to Y
+	JMP	pin label	; jump if pin is 1, which pin must be configured from the SDK
+	JMP	!OSRE label	;  jump if the output shift register has less bits than the configured 
+
+ 	WAIT	0 gpio 17	; wait for GPIO 17 to be 0 (this is the actual GPIO pin)
+	WAIT	1 pin 1		; wait for pin 1 to be 1 (pin 1 in the set of pins mapped to the PIO)
+	WAIT	1 irq 1		; wait for IRQ 1 to be set (and then clears it)
+	WAIT	0 irq 2 rel	; wait for IRQ 2 to clear, rel share relative to other PIOs.
+
+	IN	PINS, 1	; Move 1 bit from the configured pins to the ISR
+	IN	X, 32	; Copy the entire X scratch register to the ISR
+	IN	Y, 16	; Copy 16 bits from the Y scratch register to the ISR
+	IN	NULL, 4	; Copy 4 zero bits into the ISR
+	IN	ISR, 4	; Can be used to rotate 4 bits in the ISR
+	IN	OSR, 8	; Copy 8 bits from the OSR to the ISR
+
+	OUT	PINS, 1		; set the pins according to one bit in the OSR
+	OUT	X, 32		; move 32 bits from the OSR to the X scratch register
+	OUT	Y, 8		; move one byte from the OSR to the Y scratch register
+	OUT	NULL, 16	; delete 16 bits from the OSR
+	OUT	PINDIRS, 1	;  sets the pin direction (in or out) for the mapped pins
+	OUT	PC, 5		; jump to the instruction specified in the next 5 bits of the OSR
+	OUT	ISR, 16		; move 16 bits to the ISR
+	OUT	EXEC, 16	; execute the next 16 bits as an instruction
+
+.program snippets2
+	PUSH	block		; Push the ISR to the Rx FIFO waiting for space to be available
+	PUSH	noblock		; Push the ISR to the Rx FIFO if space available else no-op
+	PUSH	iffull block	; Push ISR to Rx FIFO if enough bits received and space available
+	PUSH	iffull noblock	; Push ISR to Rx FIFO if enough bits received and space 
+
+	PULL	block		; Pull 32-bits from the Tx FIFO to the OSR blocking to wait for data
+	PULL	noblock		; Pull from Tx FIFO if there is data else copy X into the OSR
+	PULL	ifempty block	; Blocking pull, but only if OSR is sufficiently empty
+	PULL	ifempty noblock	; Nonblocking pull, but only if OSR is empty
+
+	MOV	X, ~Y		; Move the one’s complement of Y to X
+	MOV	X, ::Y		; Move Y to X, reversing all the bits
+	MOV	X, STATUS	; Move the configured status to X
+	MOV	EXEC, X		; Execute the contents of X as an instruction
+	MOV	PC, Y		; Jump to the instruction specified by Y
+
+	IRQ	SET 2		; set interrupt 2, won’t wait for interrupt to be handled
+	IRQ	CLEAR 2		; clear interrupt 2
+	IRQ	WAIT 2		; set interrupt 2 and wait for interrupt handler to clear it
+	IRQ	SET 2 REL	; interrupt number will be adjusted by adding PIO number
+
+	SET	PINS, 1		; Turn on the pins for this PIO
+	SET	PINDIRS, 0	; Turn the pins into input pins
+	SET	X, 31		; Set X to the value 31
+
+
